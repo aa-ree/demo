@@ -10,6 +10,7 @@ var imgs = [],
 	    im = document.getElementsByTagName('img'),
 	    pos;
 
+	    div.style.cssText +="max-width:"+maxX+"px;";
 		for(var i=0; i<12; i++){
 			do{
 				x = (Math.random() * (maxX-minX))+minX;
@@ -47,7 +48,7 @@ function check(pos){
 			currentW = imgs[o].x+imgs[o].width,
 			currentH = imgs[o].y+imgs[o].height;
 
-			if(count > 100) return false;
+			if(count > 2000) return false;
 			if(currentX > originX && currentX < originW && currentY > originY && currentY < originH ||
 				originX > currentX && originX < currentW && currentY > originY && currentY < originH ||
 				currentX > originX && currentX < originW && currentY < originY && originY < currentH ||
