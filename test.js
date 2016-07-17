@@ -1,14 +1,16 @@
 function Counter(timer, per) {
 	this.timer = timer;
 	this.per = per;
+	this.orientation = window.screen.orientation;
 
 	var loadedimages = 0;
 	this.imageLoaded = function(){
 		loadedimages++;
-		if(loadedimages == 11){
+		if(loadedimages === 12){
 			this.start();
 		}
 	}
+	this.imageInfo = [];
 }
 
 Counter.prototype.init = function() {
@@ -23,12 +25,20 @@ Counter.prototype.init = function() {
 		arr.sort(function() {
 			return Math.random() - 0.5;
 		});
+
 		for (var l = 0; l<12; l++) {
-			images[l] = new Image();
+			images[l] = document.createElement('img');
 			images[l].onload = function(){
+				var info = {
+					id: this.id,
+					width: this.width,
+					height: this.height
+				}
+				that.imageInfo.push(info);
 				that.imageLoaded();
 			}
 			images[l].src = 'images/'+ arr[l] +'.png';
+			images[l].id = 'zodiac'+ l;
 			div.appendChild(images[l]);
 		}
 }
@@ -36,13 +46,14 @@ Counter.prototype.init = function() {
 Counter.prototype.start = function() {
 	var image = document.getElementsByTagName('img'),
 	    div = document.getElementById('container'),
+	    winWidth = window.screen.width,
+	    winheight = window.screen.height,
 	    divWidth = div.offsetWidth,
      	divHeight = div.offsetHeight,
-	    i = 120,
-	    j = 0,
-	    imgs = [],
-     	timerId, printId, 
-
+	    i = 120, j = 0, imgs = [],
+     	timerId, printId,
+     	isTouch = false,
+     	that = this,
 	    count = function() {
 	    	if(i <= 120 && i > 0) {
 	    		i--;
@@ -51,33 +62,70 @@ Counter.prototype.start = function() {
 				this.timer = 0;
 	    	}
 	    },
+	    orientationChange = function(e){
+	    	var deviceHeight, deviceWidth;
+
+	    	if(window.orientation === 90 || window.orientation === -90){
+	    		deviceHeight = window.screen.width;
+		    	deviceWidth = window.screen.height;
+		    } else {
+		    	deviceHeight = window.screen.height;
+		    	deviceWidth = window.screen.width;
+		    }
+		   
+		    var	widthOppo = parseFloat((deviceWidth / deviceHeight).toFixed(3)),
+		    	heightOppo = parseFloat((deviceHeight / deviceWidth).toFixed(3)),
+		    	i = 0, newImg = [];
+				div.offsetWidth = deviceWidth;
+
+		    	for (var img of imgs) {
+		    		var new_img = {
+		    			x: Math.ceil(img.x * widthOppo),
+		    			y: Math.ceil(img.y * widthOppo),
+		    			width: img.width,
+		    			height: img.height
+		    		};
+
+		    		img.x = new_img.x;
+		    		img.y = new_img.y;
+    				printImg(i, img);
+    				i++;
+		    	}
+	    },
+	    printImg = function(j,img){
+	    	image[j].style.cssText += "opacity: 1;top: "+ img.y +"px; left:"+ img.x +"px;";
+			image[j].setAttribute("draggable", true);
+			image[j].addEventListener("touchstart", dragStart, false);
+    		image[j].addEventListener("touchmove", drop, false);
+	    },
 	    draw = function() {
 	    	if(j < 12) {
-				image[j].style.cssText += "opacity: 1;top: "+ imgs[j].y +"px; left:"+ imgs[j].x +"px;";
+				printImg(j,imgs[j]);
 				j++;
 	    	} else {
 	    		clearInterval(printId);
-	    		this.per = 0;
+	    		this.per = 0;	
 	    	}
 	    },
 	    paint = function() {
 	    	var maxX = divWidth,
 			    maxY = divHeight,
+			    info = that.imageInfo,
 			    pos, x, y;
 
-			    for(var r = 0; r < image.length; r++){
-					do{
+			    for(var r = 0; r < info.length; r++){
+			    	do{
 						x = Math.random() * maxX;
 						y = Math.random() * maxY;
 
-						( maxX > x + image[r].offsetWidth) ? x : x -= image[r].offsetWidth;
-						( maxY > y + image[r].offsetHeight) ? y : y -= image[r].offsetHeight;
+						( maxX > x + info[r].width) ? x : x -= info[r].width;
+						( maxY > y + info[r].height) ? y : y -= info[r].height;
 
 						pos = {
 							x: x,
 							y: y,
-							width: image[r].offsetWidth,
-							height: image[r].offsetHeight
+							width: info[r].width,
+							height: info[r].height
 						};
 					} while(check(pos));
 
@@ -106,12 +154,42 @@ Counter.prototype.start = function() {
 					}
 				}
 				return false;
+	    },
+	    dragStart = function(ev){
+	    	ev.preventDefault();
+	    	var touch = ev.changedTouches[0];
+	   			isTouch = true;
+	    		handler(touch, touch.target.id);
+	    },
+	    drop = function(ev){
+	    	ev.preventDefault();
+	    	var touch = ev.targetTouches[0];
+	    		handler(touch, touch.target.id);
+	    },
+	    handler = function(touch, id){
+        	var image = document.getElementById(id),
+	    		halfH = image.offsetHeight / 2,
+	    		halfW = image.offsetWidth / 2,
+	    		top = touch.pageY - halfH,
+	    		left = touch.pageX - halfW,
+	    		index = id.split("zodiac")[1];
+
+	    		imgs[index].x = left;
+	    		imgs[index].y = top;
+	    		if(isTouch && touch.pageX + halfW < div.offsetWidth && touch.pageY + halfH  < div.offsetHeight &&
+	    		  touch.pageX > div.offsetLeft + halfW && touch.pageY > div.offsetTop + halfH){
+	    			image.style.top = top + 'px';
+	    			image.style.left = left + 'px';
+	    		}
 	    };
 
         paint();
 		timerId = setInterval(count, this.timer);
-		printId = setInterval(draw, this.per);  
+		printId = setInterval(draw, this.per);
+		window.addEventListener('orientationchange', orientationChange);  
 }
 
-var c = new Counter(1000, 10000);
-c.init();
+window.onload = function(){
+	var c = new Counter(1000, 10000);
+	c.init();
+}
