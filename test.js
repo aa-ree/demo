@@ -1,7 +1,9 @@
 function Counter(timer, per) {
+	if(!(this instanceof Counter)){
+		return new Counter(timer, per);
+	}
 	this.timer = timer;
 	this.per = per;
-	this.orientation = window.screen.orientation;
 
 	var loadedimages = 0;
 	this.imageLoaded = function(){
@@ -15,6 +17,7 @@ function Counter(timer, per) {
 
 Counter.prototype.init = function() {
 	var div = document.getElementById('container'),
+		fragment = document.createDocumentFragment(),
 		arr = [],
 		images = [],
 		that = this;
@@ -39,8 +42,9 @@ Counter.prototype.init = function() {
 			}
 			images[l].src = 'images/'+ arr[l] +'.png';
 			images[l].id = 'zodiac'+ l;
-			div.appendChild(images[l]);
+			fragment.appendChild(images[l]);
 		}
+		div.appendChild(fragment);
 }
 
 Counter.prototype.start = function() {
